@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "claude_sync/cli"
 require_relative "claude_sync/configuration"
 require_relative "claude_sync/gist_client"
 require_relative "claude_sync/git_ignore_manager"
