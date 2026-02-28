@@ -18,3 +18,5 @@ module ClaudeSync
     @configuration = nil
   end
 end
+
+require_relative "claude_sync/railtie" if defined?(Rails)
