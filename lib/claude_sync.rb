@@ -3,6 +3,7 @@
 require_relative "claude_sync/configuration"
 require_relative "claude_sync/gist_client"
 require_relative "claude_sync/git_ignore_manager"
+require_relative "claude_sync/syncer"
 require_relative "claude_sync/version"
 
 # Syncs a project's claude.md from a GitHub Gist, keeping
