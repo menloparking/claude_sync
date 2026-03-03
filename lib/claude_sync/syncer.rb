@@ -68,7 +68,17 @@ module ClaudeSync
       elapsed < @config.interval
     end
 
+    # When the server says 304 but the file is gone from
+    # disk, re-fetch without the ETag to get full content.
     def handle_not_modified
+      unless File.exist?(@config.file)
+        result = @client.fetch(etag: nil)
+        return handle_ok(result) if result[:status] == :ok
+
+        log("Retry failed: #{result[:error] || result[:status]}")
+        return :error
+      end
+
       touch_metadata
       log("Already up to date.")
       :not_modified

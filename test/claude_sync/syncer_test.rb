@@ -93,7 +93,14 @@ class SyncerTest < Minitest::Test
       JSON.pretty_generate(meta)
     )
 
+    # First request sends ETag, server says not modified.
     stub_request(:get, API_URL)
+      .with(headers: {"If-None-Match" => '"etag1"'})
+      .to_return(status: 304)
+
+    # Retry without ETag returns full content.
+    stub_request(:get, API_URL)
+      .with { |req| req.headers["If-None-Match"].nil? }
       .to_return(
         status: 200,
         body: GIST_BODY,
@@ -102,7 +109,7 @@ class SyncerTest < Minitest::Test
 
     syncer = ClaudeSync::Syncer.new
     assert_equal :ok, syncer.sync
-    assert File.exist?("CLAUDE.md")
+    assert_equal "# Test content", File.read("CLAUDE.md")
   end
 
   def test_sync_when_metadata_is_stale
@@ -130,6 +137,7 @@ class SyncerTest < Minitest::Test
   end
 
   def test_sync_returns_not_modified_on_304
+    File.write("CLAUDE.md", "# Existing content")
     meta = {
       "last_sync" => (Time.now - 90_000).iso8601,
       "etag" => '"etag1"'
