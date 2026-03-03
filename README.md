@@ -84,7 +84,7 @@ result = syncer.sync  # Bypasses freshness check
 
 ```sh
 bundle install
-bundle exec rspec
+bundle exec rake test
 bundle exec standardrb
 ```
 

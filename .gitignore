@@ -3,6 +3,8 @@
 /pkg/
 *.gem
 Gemfile.lock
-/spec/reports/
+.env
 /coverage/
 CLAUDE.md
+claude.md
+.claude_sync_metadata.json
