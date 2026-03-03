@@ -3,10 +3,10 @@
 require "rake"
 
 module ClaudeSync
-  # Defines rake tasks for manual sync operations:
-  #   claude_sync:sync       - sync (respects freshness)
-  #   claude_sync:force_sync - sync regardless of freshness
-  #   claude_sync:status     - show current sync state
+  # Defines rake tasks for fetching claude.md from a gist:
+  #   claude_sync:fetch       - fetch (respects freshness)
+  #   claude_sync:force_fetch - fetch regardless of freshness
+  #   claude_sync:status      - show current sync state
   class RakeTask
     include Rake::DSL
 
@@ -18,14 +18,14 @@ module ClaudeSync
 
     def define_tasks
       namespace :claude_sync do
-        desc "Sync claude.md from GitHub Gist"
-        task :sync do
-          run_sync(force: false)
+        desc "Fetch claude.md from GitHub Gist"
+        task :fetch do
+          run_fetch(force: false)
         end
 
-        desc "Force sync claude.md (ignore freshness)"
-        task :force_sync do
-          run_sync(force: true)
+        desc "Force fetch claude.md (ignore freshness)"
+        task :force_fetch do
+          run_fetch(force: true)
         end
 
         desc "Show claude_sync status"
@@ -33,18 +33,6 @@ module ClaudeSync
           show_status
         end
       end
-    end
-
-    def run_sync(force:)
-      require "claude_sync"
-      result = Syncer.new(force: force).sync
-      puts "claude_sync: #{result}"
-    end
-
-    def show_status
-      require "claude_sync"
-      info = Syncer.new.status
-      print_status(info)
     end
 
     def print_status(info)
@@ -59,6 +47,18 @@ module ClaudeSync
       puts "  File:      #{info[:file]}"
       puts "  Last sync: #{info[:last_sync] || "never"}"
       puts "  ETag:      #{info[:etag] || "none"}"
+    end
+
+    def run_fetch(force:)
+      require "claude_sync"
+      result = Syncer.new(force: force).sync
+      puts "claude_sync: #{result}"
+    end
+
+    def show_status
+      require "claude_sync"
+      info = Syncer.new.status
+      print_status(info)
     end
   end
 end

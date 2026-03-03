@@ -5,16 +5,16 @@ module ClaudeSync
   # outside of Rails/Rake.
   #
   # Commands:
-  #   sync   - sync (respects freshness)
-  #   force  - sync regardless of freshness
-  #   status - show current sync state
+  #   fetch  - fetch (respects freshness)
+  #   force  - fetch regardless of freshness
+  #   status - show current state
   class CLI
     def run(args = ARGV)
-      command = args.first || "sync"
+      command = args.first || "fetch"
 
       case command
-      when "sync" then do_sync(force: false)
-      when "force" then do_sync(force: true)
+      when "fetch" then do_fetch(force: false)
+      when "force" then do_fetch(force: true)
       when "status" then show_status
       else usage
       end
@@ -22,7 +22,7 @@ module ClaudeSync
 
     private
 
-    def do_sync(force:)
+    def do_fetch(force:)
       result = Syncer.new(force: force).sync
       puts "claude_sync: #{result}"
       exit((result == :error) ? 1 : 0)
@@ -51,7 +51,7 @@ module ClaudeSync
     end
 
     def usage
-      puts "Usage: claude-sync [sync|force|status]"
+      puts "Usage: claude-sync [fetch|force|status]"
       exit 1
     end
   end

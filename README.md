@@ -46,16 +46,16 @@ No additional setup required.
 ### Rake Tasks
 
 ```sh
-rake claude_sync:sync        # Sync (respects freshness)
-rake claude_sync:force_sync  # Sync regardless of freshness
-rake claude_sync:status      # Show current sync state
+rake claude_sync:fetch        # Fetch (respects freshness)
+rake claude_sync:force_fetch  # Fetch regardless of freshness
+rake claude_sync:status       # Show current sync state
 ```
 
 ### CLI
 
 ```sh
-claude-sync          # Sync (respects freshness)
-claude-sync force    # Force sync
+claude-sync          # Fetch (respects freshness)
+claude-sync force    # Force fetch
 claude-sync status   # Show status
 ```
 
