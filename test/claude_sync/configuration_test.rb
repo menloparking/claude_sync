@@ -3,6 +3,21 @@
 require "test_helper"
 
 class ConfigurationTest < Minitest::Test
+  # All tests run in a tmpdir so the project's own .env
+  # file does not leak into assertions.
+  def setup
+    super
+    @tmpdir = Dir.mktmpdir
+    @original_dir = Dir.pwd
+    Dir.chdir(@tmpdir)
+  end
+
+  def teardown
+    Dir.chdir(@original_dir)
+    FileUtils.remove_entry(@tmpdir)
+    super
+  end
+
   def test_configured_returns_false_when_gist_url_not_set
     config = ClaudeSync::Configuration.new
     refute config.configured?
@@ -21,16 +36,66 @@ class ConfigurationTest < Minitest::Test
     assert config.configured?
   end
 
+  # -- dotenv fallback tests --
+
+  def test_dotenv_handles_export_prefix
+    File.write(".env", "export CLAUDE_SYNC_GIST_URL=https://gist.github.com/user/exported1\n")
+    config = ClaudeSync::Configuration.new
+    assert_equal "exported1", config.gist_id
+  end
+
+  def test_dotenv_ignores_comments
+    File.write(".env", "# A comment\nCLAUDE_SYNC_GIST_URL=https://gist.github.com/user/commented1\n")
+    config = ClaudeSync::Configuration.new
+    assert_equal "commented1", config.gist_id
+  end
+
+  def test_dotenv_reads_multiple_vars
+    File.write(".env", <<~ENV)
+      CLAUDE_SYNC_GIST_URL=https://gist.github.com/user/multi1
+      CLAUDE_SYNC_QUIET=1
+      GITHUB_TOKEN=ghp_dotenv
+    ENV
+    config = ClaudeSync::Configuration.new
+    assert_equal "multi1", config.gist_id
+    assert config.quiet
+    assert_equal "ghp_dotenv", config.github_token
+  end
+
+  def test_dotenv_strips_quotes
+    File.write(".env", %(CLAUDE_SYNC_GIST_URL="https://gist.github.com/user/quoted1"\n))
+    config = ClaudeSync::Configuration.new
+    assert_equal "quoted1", config.gist_id
+  end
+
+  def test_env_development_takes_precedence_over_dotenv
+    File.write(".env", "CLAUDE_SYNC_GIST_URL=https://gist.github.com/user/fromenv\n")
+    File.write(".env.development", "CLAUDE_SYNC_GIST_URL=https://gist.github.com/user/fromdev\n")
+    config = ClaudeSync::Configuration.new
+    assert_equal "fromdev", config.gist_id
+  end
+
+  def test_active_env_takes_precedence_over_dotenv
+    File.write(".env", "CLAUDE_SYNC_GIST_URL=https://gist.github.com/user/fromfile\n")
+    ENV["CLAUDE_SYNC_GIST_URL"] = "https://gist.github.com/user/fromactive"
+    config = ClaudeSync::Configuration.new
+    assert_equal "fromactive", config.gist_id
+  end
+
+  def test_reads_gist_url_from_dotenv
+    File.write(".env", "CLAUDE_SYNC_GIST_URL=https://gist.github.com/user/dotenv1\n")
+    config = ClaudeSync::Configuration.new
+    assert config.configured?
+    assert_equal "dotenv1", config.gist_id
+  end
+
+  # -- env var tests --
+
   def test_extracts_gist_id_from_url
     ENV["CLAUDE_SYNC_GIST_URL"] =
       "https://gist.github.com/user/abc123"
     config = ClaudeSync::Configuration.new
     assert_equal "abc123", config.gist_id
-  end
-
-  def test_gist_id_returns_nil_when_url_not_set
-    config = ClaudeSync::Configuration.new
-    assert_nil config.gist_id
   end
 
   def test_file_defaults_to_claude_md
@@ -44,32 +109,9 @@ class ConfigurationTest < Minitest::Test
     assert_equal "AGENTS.md", config.file
   end
 
-  def test_interval_defaults_to_86400
+  def test_gist_id_returns_nil_when_url_not_set
     config = ClaudeSync::Configuration.new
-    assert_equal 86_400, config.interval
-  end
-
-  def test_interval_uses_env_var
-    ENV["CLAUDE_SYNC_INTERVAL"] = "3600"
-    config = ClaudeSync::Configuration.new
-    assert_equal 3600, config.interval
-  end
-
-  def test_interval_falls_back_on_invalid_value
-    ENV["CLAUDE_SYNC_INTERVAL"] = "not_a_number"
-    config = ClaudeSync::Configuration.new
-    assert_equal 86_400, config.interval
-  end
-
-  def test_quiet_defaults_to_false
-    config = ClaudeSync::Configuration.new
-    refute config.quiet
-  end
-
-  def test_quiet_true_when_env_is_1
-    ENV["CLAUDE_SYNC_QUIET"] = "1"
-    config = ClaudeSync::Configuration.new
-    assert config.quiet
+    assert_nil config.gist_id
   end
 
   def test_github_token_returns_nil_when_not_set
@@ -81,5 +123,33 @@ class ConfigurationTest < Minitest::Test
     ENV["GITHUB_TOKEN"] = "ghp_test123"
     config = ClaudeSync::Configuration.new
     assert_equal "ghp_test123", config.github_token
+  end
+
+  def test_interval_defaults_to_86400
+    config = ClaudeSync::Configuration.new
+    assert_equal 86_400, config.interval
+  end
+
+  def test_interval_falls_back_on_invalid_value
+    ENV["CLAUDE_SYNC_INTERVAL"] = "not_a_number"
+    config = ClaudeSync::Configuration.new
+    assert_equal 86_400, config.interval
+  end
+
+  def test_interval_uses_env_var
+    ENV["CLAUDE_SYNC_INTERVAL"] = "3600"
+    config = ClaudeSync::Configuration.new
+    assert_equal 3600, config.interval
+  end
+
+  def test_quiet_defaults_to_false
+    config = ClaudeSync::Configuration.new
+    refute config.quiet
+  end
+
+  def test_quiet_true_when_env_is_1
+    ENV["CLAUDE_SYNC_QUIET"] = "1"
+    config = ClaudeSync::Configuration.new
+    assert config.quiet
   end
 end

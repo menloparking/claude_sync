@@ -26,7 +26,7 @@ Then run `bundle install`.
 
 ## Configuration
 
-Set environment variables:
+Set environment variables (in the shell, `.env.development`, or `.env`):
 
 | Variable               | Required | Default      | Description                       |
 | ---------------------- | -------- | ------------ | --------------------------------- |
@@ -35,6 +35,9 @@ Set environment variables:
 | `CLAUDE_SYNC_INTERVAL` | No       | `86400` (24h)| Freshness interval in seconds     |
 | `CLAUDE_SYNC_QUIET`    | No       | `0`          | Set to `1` to suppress output     |
 | `GITHUB_TOKEN`         | No       | —            | Auth token for private gists      |
+
+Variables are resolved in this order: active environment, then `.env.development`, then `.env`. No
+external dependencies are needed — the gem parses dotenv files itself.
 
 ## Usage
 
