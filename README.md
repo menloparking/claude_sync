@@ -1,6 +1,6 @@
 # claude_sync
 
-A development gem that syncs your project's `claude.md` file from a GitHub Gist. Keeps your Claude
+A development gem that syncs your project's `CLAUDE.md` file from a GitHub Gist. Keeps your Claude
 Code instructions consistent across dev containers, Codespaces, and local environments.
 
 ## Features
@@ -31,7 +31,7 @@ Set environment variables:
 | Variable               | Required | Default      | Description                       |
 | ---------------------- | -------- | ------------ | --------------------------------- |
 | `CLAUDE_SYNC_GIST_URL` | Yes      | —            | Full URL to your GitHub Gist      |
-| `CLAUDE_SYNC_FILE`     | No       | `claude.md`  | Target filename to write          |
+| `CLAUDE_SYNC_FILE`     | No       | `CLAUDE.md`  | Target filename to write          |
 | `CLAUDE_SYNC_INTERVAL` | No       | `86400` (24h)| Freshness interval in seconds     |
 | `CLAUDE_SYNC_QUIET`    | No       | `0`          | Set to `1` to suppress output     |
 | `GITHUB_TOKEN`         | No       | —            | Auth token for private gists      |
@@ -76,7 +76,7 @@ result = syncer.sync  # Bypasses freshness check
 1. Checks if `CLAUDE_SYNC_GIST_URL` is set — silently skips if not
 2. Checks freshness — skips if synced within the interval
 3. Fetches gist via GitHub API with ETag conditional request
-4. Writes the first file's content to `claude.md` (or configured name)
+4. Writes the first file's content to `CLAUDE.md` (or configured name)
 5. Saves metadata (ETag, timestamp) to `.claude_sync_metadata.json`
 6. Ensures both files are in `.gitignore`
 

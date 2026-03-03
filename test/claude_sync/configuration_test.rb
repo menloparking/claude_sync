@@ -35,7 +35,7 @@ class ConfigurationTest < Minitest::Test
 
   def test_file_defaults_to_claude_md
     config = ClaudeSync::Configuration.new
-    assert_equal "claude.md", config.file
+    assert_equal "CLAUDE.md", config.file
   end
 
   def test_file_uses_env_var

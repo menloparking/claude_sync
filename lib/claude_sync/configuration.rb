@@ -7,13 +7,13 @@ module ClaudeSync
   #   CLAUDE_SYNC_GIST_URL - full URL to the GitHub Gist
   #
   # Optional:
-  #   CLAUDE_SYNC_FILE     - target filename (default: claude.md)
+  #   CLAUDE_SYNC_FILE     - target filename (default: CLAUDE.md)
   #   CLAUDE_SYNC_INTERVAL - freshness window in seconds
   #                          (default: 86400 = 24 hours)
   #   CLAUDE_SYNC_QUIET    - suppress informational output
   #   GITHUB_TOKEN         - auth token for private gists
   class Configuration
-    DEFAULT_FILE = "claude.md"
+    DEFAULT_FILE = "CLAUDE.md"
     DEFAULT_INTERVAL = 86_400
 
     attr_reader :file, :gist_id, :gist_url, :github_token,

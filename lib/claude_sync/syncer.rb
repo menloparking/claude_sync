@@ -55,7 +55,11 @@ module ClaudeSync
 
     private
 
+    # Not fresh if the target file is missing on disk,
+    # even when the metadata timestamp says otherwise.
     def fresh?
+      return false unless File.exist?(@config.file)
+
       meta = load_metadata
       last = meta["last_sync"]
       return false if last.nil?

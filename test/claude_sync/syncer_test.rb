@@ -9,7 +9,7 @@ class SyncerTest < Minitest::Test
 
   GIST_BODY = {
     "files" => {
-      "claude.md" => {"content" => "# Test content"}
+      "CLAUDE.md" => {"content" => "# Test content"}
     }
   }.to_json
 
@@ -48,7 +48,7 @@ class SyncerTest < Minitest::Test
 
     syncer = ClaudeSync::Syncer.new
     assert_equal :ok, syncer.sync
-    assert_equal "# Test content", File.read("claude.md")
+    assert_equal "# Test content", File.read("CLAUDE.md")
   end
 
   def test_sync_saves_metadata
@@ -69,6 +69,7 @@ class SyncerTest < Minitest::Test
   end
 
   def test_sync_returns_fresh_within_interval
+    File.write("CLAUDE.md", "# Existing content")
     meta = {
       "last_sync" => Time.now.iso8601,
       "etag" => '"etag1"'
@@ -80,6 +81,28 @@ class SyncerTest < Minitest::Test
 
     syncer = ClaudeSync::Syncer.new
     assert_equal :fresh, syncer.sync
+  end
+
+  def test_sync_fetches_when_file_missing_despite_metadata
+    meta = {
+      "last_sync" => Time.now.iso8601,
+      "etag" => '"etag1"'
+    }
+    File.write(
+      ".claude_sync_metadata.json",
+      JSON.pretty_generate(meta)
+    )
+
+    stub_request(:get, API_URL)
+      .to_return(
+        status: 200,
+        body: GIST_BODY,
+        headers: {"ETag" => '"etag2"'}
+      )
+
+    syncer = ClaudeSync::Syncer.new
+    assert_equal :ok, syncer.sync
+    assert File.exist?("CLAUDE.md")
   end
 
   def test_sync_when_metadata_is_stale
@@ -132,6 +155,7 @@ class SyncerTest < Minitest::Test
   end
 
   def test_sync_bypasses_freshness_when_forced
+    File.write("CLAUDE.md", "# Old content")
     meta = {
       "last_sync" => Time.now.iso8601,
       "etag" => '"etag1"'
@@ -163,7 +187,7 @@ class SyncerTest < Minitest::Test
     ClaudeSync::Syncer.new.sync
 
     gitignore = File.read(".gitignore")
-    assert_includes gitignore, "claude.md"
+    assert_includes gitignore, "CLAUDE.md"
     assert_includes gitignore, ".claude_sync_metadata.json"
   end
 
@@ -180,6 +204,6 @@ class SyncerTest < Minitest::Test
     info = syncer.status
     assert info[:configured]
     assert_includes info[:gist_url], "abc123"
-    assert_equal "claude.md", info[:file]
+    assert_equal "CLAUDE.md", info[:file]
   end
 end
