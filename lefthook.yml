@@ -1,0 +1,6 @@
+pre-commit:
+  commands:
+    standardrb:
+      glob: "*.rb"
+      exclude: "^bin/"
+      run: bundle exec standardrb --fix-unsafely {staged_files} && git add {staged_files}
