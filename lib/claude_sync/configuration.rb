@@ -23,6 +23,7 @@ module ClaudeSync
   #                                          (default: 86400 = 24 hours)
   #   CLAUDE_SYNC_QUIET                    - suppress informational output
   #   CLAUDE_SYNC_DRIVE_TOKEN              - auth token for Drive documents
+  #   CLAUDE_SYNC_DRIVE_TOKEN_FILE         - dotenv-style token file
   #   DRIVE_MENLOPARKING_TOKEN             - fallback auth token for Drive documents
   #   GITHUB_TOKEN                         - auth token for private gists
   class Configuration
@@ -41,7 +42,7 @@ module ClaudeSync
       @files = parse_files
       @file = @files.first
       @drive_documents = parse_drive_documents
-      @drive_token = env("CLAUDE_SYNC_DRIVE_TOKEN") || env("DRIVE_MENLOPARKING_TOKEN")
+      @drive_token = parse_drive_token
       @interval = parse_interval
       @quiet = env("CLAUDE_SYNC_QUIET") == "1"
       @github_token = env("GITHUB_TOKEN")
@@ -123,6 +124,26 @@ module ClaudeSync
 
         [file, extract_drive_document_id(id)]
       end.to_h
+    end
+
+    def parse_drive_token
+      env("CLAUDE_SYNC_DRIVE_TOKEN") ||
+        env("DRIVE_MENLOPARKING_TOKEN") ||
+        token_from_file(env("CLAUDE_SYNC_DRIVE_TOKEN_FILE")) ||
+        token_from_file(File.expand_path("~/.config/opencode/secrets.env"))
+    end
+
+    def token_from_file(path)
+      return if path.nil? || path.empty? || !File.exist?(path)
+
+      File.foreach(path) do |line|
+        key, value = line.strip.split("=", 2)
+        next unless %w[CLAUDE_SYNC_DRIVE_TOKEN DRIVE_MENLOPARKING_TOKEN].include?(key)
+
+        return value.to_s.gsub(/\A["']|["']\z/, "")
+      end
+
+      nil
     end
 
     def parse_drive_documents

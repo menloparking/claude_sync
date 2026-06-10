@@ -147,6 +147,13 @@ class ConfigurationTest < Minitest::Test
     assert_equal "abc123", config.drive_documents["CLAUDE.md"]
   end
 
+  def test_reads_drive_token_from_token_file
+    File.write("tokens.env", "DRIVE_MENLOPARKING_TOKEN=drive_secret\n")
+    ENV["CLAUDE_SYNC_DRIVE_TOKEN_FILE"] = "tokens.env"
+    config = ClaudeSync::Configuration.new
+    assert_equal "drive_secret", config.drive_token
+  end
+
   def test_gist_id_returns_nil_when_url_not_set
     config = ClaudeSync::Configuration.new
     assert_nil config.gist_id

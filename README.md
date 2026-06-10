@@ -41,6 +41,7 @@ Set environment variables (in the shell, `.env.development`, or `.env`):
 | `CLAUDE_SYNC_INTERVAL`                | No       | `86400` (24h)              | Freshness interval in seconds                |
 | `CLAUDE_SYNC_QUIET`                   | No       | `0`                        | Set to `1` to suppress output                |
 | `CLAUDE_SYNC_DRIVE_TOKEN`             | No       | —                          | Auth token for Drive documents               |
+| `CLAUDE_SYNC_DRIVE_TOKEN_FILE`        | No       | —                          | Dotenv-style file containing the Drive token |
 | `DRIVE_MENLOPARKING_TOKEN`            | No       | —                          | Fallback auth token for Drive documents      |
 | `GITHUB_TOKEN`                        | No       | —                          | Auth token for private gists                 |
 
@@ -48,6 +49,9 @@ Set either a GitHub Gist source or one or more Drive document sources.
 
 Variables are resolved in this order: active environment, then `.env.development`, then `.env`. No
 external dependencies are needed — the gem parses dotenv files itself.
+
+Drive tokens are read from `CLAUDE_SYNC_DRIVE_TOKEN`, `DRIVE_MENLOPARKING_TOKEN`,
+`CLAUDE_SYNC_DRIVE_TOKEN_FILE`, or `~/.config/opencode/secrets.env`, in that order.
 
 ## Usage
 
