@@ -149,7 +149,8 @@ module ClaudeSync
     def parse_drive_documents
       documents = parse_drive_document_pairs(env("CLAUDE_SYNC_DRIVE_DOCUMENT_IDS"))
       if present?(env("CLAUDE_SYNC_DRIVE_DOCUMENT_ID"))
-        documents[@file] = extract_drive_document_id(env("CLAUDE_SYNC_DRIVE_DOCUMENT_ID"))
+        document_id = extract_drive_document_id(env("CLAUDE_SYNC_DRIVE_DOCUMENT_ID"))
+        @files.each { |file| documents[file] = document_id }
       end
       if present?(env("CLAUDE_SYNC_AGENTS_DRIVE_DOCUMENT_ID"))
         documents["AGENTS.md"] = extract_drive_document_id(env("CLAUDE_SYNC_AGENTS_DRIVE_DOCUMENT_ID"))

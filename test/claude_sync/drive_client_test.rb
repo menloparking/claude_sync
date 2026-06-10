@@ -32,6 +32,20 @@ class DriveClientTest < Minitest::Test
     assert_equal '"a1"', result[:etag]["AGENTS.md"]
   end
 
+  def test_single_drive_document_duplicates_to_configured_files
+    ENV.delete("CLAUDE_SYNC_AGENTS_DRIVE_DOCUMENT_ID")
+    @config = ClaudeSync::Configuration.new
+    @client = ClaudeSync::DriveClient.new(@config)
+
+    stub_request(:get, CLAUDE_URL)
+      .to_return(status: 200, body: "# Shared", headers: {"ETag" => '"s1"'})
+
+    result = @client.fetch
+    assert_equal :ok, result[:status]
+    assert_equal "# Shared", result[:contents]["CLAUDE.md"]
+    assert_equal "# Shared", result[:contents]["AGENTS.md"]
+  end
+
   def test_fetch_sends_plain_text_accept_and_authorization
     stub = stub_request(:get, CLAUDE_URL)
       .with(headers: {"Accept" => "text/plain", "Authorization" => "Bearer drive-token"})

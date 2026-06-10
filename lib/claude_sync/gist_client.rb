@@ -60,14 +60,16 @@ module ClaudeSync
       files = data["files"]
       return nil if files.nil? || files.empty?
 
-      contents = {}
-      @config.files.each do |file|
-        gist_file = files[file] || files[file.downcase]
-        contents[file] = gist_file["content"] if gist_file && gist_file["content"]
-      end
+      source = first_matching_file(files) || files.values.first
+      return {} unless source && source["content"]
 
-      contents[files.keys.first] = files.values.first["content"] if contents.empty?
-      contents
+      @config.files.to_h { |file| [file, source["content"]] }
+    end
+
+    def first_matching_file(files)
+      @config.files.lazy.filter_map do |file|
+        files[file] || files[file.downcase]
+      end.first
     end
 
     def handle_ok(response)

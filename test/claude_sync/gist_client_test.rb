@@ -36,11 +36,11 @@ class GistClientTest < Minitest::Test
     result = @client.fetch
     assert_equal :ok, result[:status]
     assert_equal "# Instructions\nDo things.", result[:contents]["CLAUDE.md"]
-    assert_equal "# Agents\nDo agent things.", result[:contents]["AGENTS.md"]
+    assert_equal "# Instructions\nDo things.", result[:contents]["AGENTS.md"]
     assert_equal '"etag123"', result[:etag]
   end
 
-  def test_fetch_falls_back_to_first_file_when_names_do_not_match
+  def test_fetch_duplicates_first_matching_file_to_configured_files
     stub_request(:get, API_URL)
       .to_return(
         status: 200,
@@ -50,7 +50,8 @@ class GistClientTest < Minitest::Test
 
     result = @client.fetch
     assert_equal :ok, result[:status]
-    assert_equal "# Notes", result[:contents]["notes.md"]
+    assert_equal "# Notes", result[:contents]["CLAUDE.md"]
+    assert_equal "# Notes", result[:contents]["AGENTS.md"]
   end
 
   def test_fetch_returns_not_modified_on_304

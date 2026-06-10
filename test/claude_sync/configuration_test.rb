@@ -145,6 +145,7 @@ class ConfigurationTest < Minitest::Test
     ENV["CLAUDE_SYNC_DRIVE_DOCUMENT_ID"] = "https://drive.menloparking.com/documents/abc123"
     config = ClaudeSync::Configuration.new
     assert_equal "abc123", config.drive_documents["CLAUDE.md"]
+    assert_equal "abc123", config.drive_documents["AGENTS.md"]
   end
 
   def test_reads_drive_token_from_token_file

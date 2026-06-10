@@ -21,14 +21,17 @@ module ClaudeSync
       contents = {}
       etags = {}
 
-      @config.drive_documents.each do |file, document_id|
-        result = fetch_document(document_id, etag_for(etag, file))
+      @config.drive_documents.group_by { |_file, document_id| document_id }.each do |document_id, pairs|
+        files = pairs.map(&:first)
+        result = fetch_document(document_id, etag_for(etag, files.first))
         return result if result[:status] == :error
 
         next if result[:status] == :not_modified
 
-        contents[file] = result[:content]
-        etags[file] = result[:etag]
+        files.each do |file|
+          contents[file] = result[:content]
+          etags[file] = result[:etag]
+        end
       end
 
       return {status: :not_modified} if contents.empty?

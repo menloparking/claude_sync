@@ -50,7 +50,7 @@ class SyncerTest < Minitest::Test
     syncer = ClaudeSync::Syncer.new
     assert_equal :ok, syncer.sync
     assert_equal "# Test content", File.read("CLAUDE.md")
-    assert_equal "# Agent content", File.read("AGENTS.md")
+    assert_equal "# Test content", File.read("AGENTS.md")
   end
 
   def test_sync_saves_metadata
@@ -117,7 +117,7 @@ class SyncerTest < Minitest::Test
     syncer = ClaudeSync::Syncer.new
     assert_equal :ok, syncer.sync
     assert_equal "# Test content", File.read("CLAUDE.md")
-    assert_equal "# Agent content", File.read("AGENTS.md")
+    assert_equal "# Test content", File.read("AGENTS.md")
   end
 
   def test_sync_when_metadata_is_stale
@@ -215,18 +215,15 @@ class SyncerTest < Minitest::Test
   def test_sync_writes_drive_documents
     ENV.delete("CLAUDE_SYNC_GIST_URL")
     ENV["CLAUDE_SYNC_DRIVE_DOCUMENT_ID"] = "claude-doc"
-    ENV["CLAUDE_SYNC_AGENTS_DRIVE_DOCUMENT_ID"] = "agents-doc"
     ClaudeSync.reset_configuration!
 
     stub_request(:get, "https://drive.menloparking.com/api/v1/documents/claude-doc")
       .to_return(status: 200, body: "# Claude from Drive", headers: {"ETag" => '"c1"'})
-    stub_request(:get, "https://drive.menloparking.com/api/v1/documents/agents-doc")
-      .to_return(status: 200, body: "# Agents from Drive", headers: {"ETag" => '"a1"'})
 
     syncer = ClaudeSync::Syncer.new
     assert_equal :ok, syncer.sync
     assert_equal "# Claude from Drive", File.read("CLAUDE.md")
-    assert_equal "# Agents from Drive", File.read("AGENTS.md")
+    assert_equal "# Claude from Drive", File.read("AGENTS.md")
   end
 
   def test_status_reports_unconfigured
