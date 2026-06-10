@@ -19,13 +19,14 @@ class DriveClientTest < Minitest::Test
 
   def test_fetch_returns_contents_on_200
     stub_request(:get, CLAUDE_URL)
-      .to_return(status: 200, body: "# Claude", headers: {"ETag" => '"c1"'})
+      .to_return(status: 200, body: "# Claude — UTF-8".b, headers: {"ETag" => '"c1"'})
     stub_request(:get, AGENTS_URL)
       .to_return(status: 200, body: "# Agents", headers: {"ETag" => '"a1"'})
 
     result = @client.fetch
-    assert_equal :ok, result[:status]
-    assert_equal "# Claude", result[:contents]["CLAUDE.md"]
+    assert_equal :ok, result[:status], result.inspect
+    assert_equal "# Claude — UTF-8", result[:contents]["CLAUDE.md"]
+    assert_equal Encoding::UTF_8, result[:contents]["CLAUDE.md"].encoding
     assert_equal "# Agents", result[:contents]["AGENTS.md"]
     assert_equal '"c1"', result[:etag]["CLAUDE.md"]
     assert_equal '"a1"', result[:etag]["AGENTS.md"]

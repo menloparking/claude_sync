@@ -71,7 +71,7 @@ module ClaudeSync
     def handle_response(response)
       case response.code.to_i
       when 200
-        {status: :ok, content: response.body, etag: response["ETag"]}
+        {status: :ok, content: response.body.to_s.dup.force_encoding("UTF-8"), etag: response["ETag"]}
       when 304
         {status: :not_modified}
       else
