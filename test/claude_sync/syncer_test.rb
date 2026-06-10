@@ -6,10 +6,12 @@ require "json"
 class SyncerTest < Minitest::Test
   GIST_ID = "abc123"
   API_URL = "https://api.github.com/gists/#{GIST_ID}"
+  GIST_URL = "https://gist.github.com/user/#{GIST_ID}"
 
   GIST_BODY = {
     "files" => {
-      "CLAUDE.md" => {"content" => "# Test content"}
+      "CLAUDE.md" => {"content" => "# Test content"},
+      "AGENTS.md" => {"content" => "# Agent content"}
     }
   }.to_json
 
@@ -19,8 +21,7 @@ class SyncerTest < Minitest::Test
     @original_dir = Dir.pwd
     Dir.chdir(@tmpdir)
 
-    ENV["CLAUDE_SYNC_GIST_URL"] =
-      "https://gist.github.com/user/#{GIST_ID}"
+    ENV["CLAUDE_SYNC_GIST_URL"] = GIST_URL
     ENV["CLAUDE_SYNC_QUIET"] = "1"
     ClaudeSync.reset_configuration!
   end
@@ -49,6 +50,7 @@ class SyncerTest < Minitest::Test
     syncer = ClaudeSync::Syncer.new
     assert_equal :ok, syncer.sync
     assert_equal "# Test content", File.read("CLAUDE.md")
+    assert_equal "# Agent content", File.read("AGENTS.md")
   end
 
   def test_sync_saves_metadata
@@ -65,13 +67,17 @@ class SyncerTest < Minitest::Test
       File.read(".claude_sync_metadata.json")
     )
     assert_equal '"etag1"', meta["etag"]
+    assert_equal %w[CLAUDE.md AGENTS.md], meta["files"]
     refute_nil meta["last_sync"]
   end
 
   def test_sync_returns_fresh_within_interval
     File.write("CLAUDE.md", "# Existing content")
+    File.write("AGENTS.md", "# Existing agent content")
     meta = {
+      "files" => %w[CLAUDE.md AGENTS.md],
       "last_sync" => Time.now.iso8601,
+      "source_key" => source_key,
       "etag" => '"etag1"'
     }
     File.write(
@@ -86,6 +92,7 @@ class SyncerTest < Minitest::Test
   def test_sync_fetches_when_file_missing_despite_metadata
     meta = {
       "last_sync" => Time.now.iso8601,
+      "source_key" => source_key,
       "etag" => '"etag1"'
     }
     File.write(
@@ -110,11 +117,13 @@ class SyncerTest < Minitest::Test
     syncer = ClaudeSync::Syncer.new
     assert_equal :ok, syncer.sync
     assert_equal "# Test content", File.read("CLAUDE.md")
+    assert_equal "# Agent content", File.read("AGENTS.md")
   end
 
   def test_sync_when_metadata_is_stale
     meta = {
       "last_sync" => (Time.now - 90_000).iso8601,
+      "source_key" => source_key,
       "etag" => '"old_etag"'
     }
     File.write(
@@ -138,8 +147,11 @@ class SyncerTest < Minitest::Test
 
   def test_sync_returns_not_modified_on_304
     File.write("CLAUDE.md", "# Existing content")
+    File.write("AGENTS.md", "# Existing agent content")
     meta = {
+      "files" => %w[CLAUDE.md AGENTS.md],
       "last_sync" => (Time.now - 90_000).iso8601,
+      "source_key" => source_key,
       "etag" => '"etag1"'
     }
     File.write(
@@ -196,7 +208,25 @@ class SyncerTest < Minitest::Test
 
     gitignore = File.read(".gitignore")
     assert_includes gitignore, "CLAUDE.md"
+    assert_includes gitignore, "AGENTS.md"
     assert_includes gitignore, ".claude_sync_metadata.json"
+  end
+
+  def test_sync_writes_drive_documents
+    ENV.delete("CLAUDE_SYNC_GIST_URL")
+    ENV["CLAUDE_SYNC_DRIVE_DOCUMENT_ID"] = "claude-doc"
+    ENV["CLAUDE_SYNC_AGENTS_DRIVE_DOCUMENT_ID"] = "agents-doc"
+    ClaudeSync.reset_configuration!
+
+    stub_request(:get, "https://drive.menloparking.com/api/v1/documents/claude-doc")
+      .to_return(status: 200, body: "# Claude from Drive", headers: {"ETag" => '"c1"'})
+    stub_request(:get, "https://drive.menloparking.com/api/v1/documents/agents-doc")
+      .to_return(status: 200, body: "# Agents from Drive", headers: {"ETag" => '"a1"'})
+
+    syncer = ClaudeSync::Syncer.new
+    assert_equal :ok, syncer.sync
+    assert_equal "# Claude from Drive", File.read("CLAUDE.md")
+    assert_equal "# Agents from Drive", File.read("AGENTS.md")
   end
 
   def test_status_reports_unconfigured
@@ -212,6 +242,12 @@ class SyncerTest < Minitest::Test
     info = syncer.status
     assert info[:configured]
     assert_includes info[:gist_url], "abc123"
-    assert_equal "CLAUDE.md", info[:file]
+    assert_equal %w[CLAUDE.md AGENTS.md], info[:files]
+  end
+
+  private
+
+  def source_key
+    ["gist", GIST_URL, %w[CLAUDE.md AGENTS.md]].inspect
   end
 end

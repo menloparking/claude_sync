@@ -14,11 +14,11 @@ module ClaudeSync
       @config = configuration
     end
 
-    # Fetches the first file's content from the gist.
+    # Fetches matching file content from the gist.
     #
     # Returns a hash with:
     #   :status  - :ok, :not_modified, or :error
-    #   :content - the file content (when :ok)
+    #   :contents - hash of filename => content (when :ok)
     #   :etag    - the response ETag (when :ok)
     #   :error   - error message (when :error)
     def fetch(etag: nil)
@@ -55,18 +55,25 @@ module ClaudeSync
       http.request(request)
     end
 
-    def extract_content(body)
+    def extract_contents(body)
       data = JSON.parse(body)
       files = data["files"]
       return nil if files.nil? || files.empty?
 
-      files.values.first["content"]
+      contents = {}
+      @config.files.each do |file|
+        gist_file = files[file] || files[file.downcase]
+        contents[file] = gist_file["content"] if gist_file && gist_file["content"]
+      end
+
+      contents[files.keys.first] = files.values.first["content"] if contents.empty?
+      contents
     end
 
     def handle_ok(response)
-      content = extract_content(response.body)
-      if content
-        {status: :ok, content: content,
+      contents = extract_contents(response.body)
+      if contents && !contents.empty?
+        {status: :ok, contents: contents,
          etag: response["ETag"]}
       else
         {status: :error, error: "No files in gist"}

@@ -30,15 +30,16 @@ module ClaudeSync
 
     def print_configured(info)
       puts "claude_sync status:"
-      puts "  Gist URL:  #{info[:gist_url]}"
-      puts "  File:      #{info[:file]}"
+      puts "  Gist URL:        #{info[:gist_url]}" if info[:gist_url]
+      puts "  Drive documents: #{info[:drive_documents]}" if info[:drive_documents]&.any?
+      puts "  Files:           #{info[:files].join(", ")}"
       puts "  Last sync: #{info[:last_sync] || "never"}"
       puts "  ETag:      #{info[:etag] || "none"}"
     end
 
     def print_unconfigured
       puts "claude_sync: not configured"
-      puts "  Set CLAUDE_SYNC_GIST_URL to enable."
+      puts "  Set CLAUDE_SYNC_GIST_URL or CLAUDE_SYNC_DRIVE_DOCUMENT_ID to enable."
     end
 
     def show_status

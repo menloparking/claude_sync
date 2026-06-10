@@ -11,34 +11,52 @@ module ClaudeSync
   #   3. .env
   #
   # Required:
-  #   CLAUDE_SYNC_GIST_URL - full URL to the GitHub Gist
+  #   CLAUDE_SYNC_GIST_URL          - full URL to the GitHub Gist, or
+  #   CLAUDE_SYNC_DRIVE_DOCUMENT_ID - Drive document ID/URL for CLAUDE.md
   #
   # Optional:
-  #   CLAUDE_SYNC_FILE     - target filename (default: CLAUDE.md)
-  #   CLAUDE_SYNC_INTERVAL - freshness window in seconds
-  #                          (default: 86400 = 24 hours)
-  #   CLAUDE_SYNC_QUIET    - suppress informational output
-  #   GITHUB_TOKEN         - auth token for private gists
+  #   CLAUDE_SYNC_AGENTS_DRIVE_DOCUMENT_ID - Drive document ID/URL for AGENTS.md
+  #   CLAUDE_SYNC_DRIVE_DOCUMENT_IDS       - file:id pairs, comma-separated
+  #   CLAUDE_SYNC_FILE                     - target filename (default: CLAUDE.md)
+  #   CLAUDE_SYNC_FILES                    - target filenames, comma-separated
+  #   CLAUDE_SYNC_INTERVAL                 - freshness window in seconds
+  #                                          (default: 86400 = 24 hours)
+  #   CLAUDE_SYNC_QUIET                    - suppress informational output
+  #   CLAUDE_SYNC_DRIVE_TOKEN              - auth token for Drive documents
+  #   DRIVE_MENLOPARKING_TOKEN             - fallback auth token for Drive documents
+  #   GITHUB_TOKEN                         - auth token for private gists
   class Configuration
     DEFAULT_FILE = "CLAUDE.md"
+    DEFAULT_FILES = %w[CLAUDE.md AGENTS.md].freeze
     DEFAULT_INTERVAL = 86_400
     DOTENV_FILES = %w[.env.development .env].freeze
 
-    attr_reader :file, :gist_id, :gist_url, :github_token,
-      :interval, :quiet
+    attr_reader :drive_documents, :drive_token, :file, :files,
+      :gist_id, :gist_url, :github_token, :interval, :quiet
 
     def initialize
       @dotenv = load_dotenv
       @gist_url = env("CLAUDE_SYNC_GIST_URL")
       @gist_id = extract_gist_id(@gist_url)
-      @file = env("CLAUDE_SYNC_FILE") || DEFAULT_FILE
+      @files = parse_files
+      @file = @files.first
+      @drive_documents = parse_drive_documents
+      @drive_token = env("CLAUDE_SYNC_DRIVE_TOKEN") || env("DRIVE_MENLOPARKING_TOKEN")
       @interval = parse_interval
       @quiet = env("CLAUDE_SYNC_QUIET") == "1"
       @github_token = env("GITHUB_TOKEN")
     end
 
     def configured?
-      !@gist_url.nil? && !@gist_url.empty?
+      present?(@gist_url) || !@drive_documents.empty?
+    end
+
+    def drive_configured?
+      !@drive_documents.empty?
+    end
+
+    def gist_configured?
+      present?(@gist_url)
     end
 
     private
@@ -96,6 +114,46 @@ module ClaudeSync
       Integer(raw)
     rescue ArgumentError
       DEFAULT_INTERVAL
+    end
+
+    def parse_drive_document_pairs(raw)
+      raw.to_s.split(",").filter_map do |pair|
+        file, id = pair.split(":", 2).map(&:strip)
+        next if file.nil? || file.empty? || id.nil? || id.empty?
+
+        [file, extract_drive_document_id(id)]
+      end.to_h
+    end
+
+    def parse_drive_documents
+      documents = parse_drive_document_pairs(env("CLAUDE_SYNC_DRIVE_DOCUMENT_IDS"))
+      if present?(env("CLAUDE_SYNC_DRIVE_DOCUMENT_ID"))
+        documents[@file] = extract_drive_document_id(env("CLAUDE_SYNC_DRIVE_DOCUMENT_ID"))
+      end
+      if present?(env("CLAUDE_SYNC_AGENTS_DRIVE_DOCUMENT_ID"))
+        documents["AGENTS.md"] = extract_drive_document_id(env("CLAUDE_SYNC_AGENTS_DRIVE_DOCUMENT_ID"))
+      end
+      documents
+    end
+
+    def parse_files
+      if present?(env("CLAUDE_SYNC_FILES"))
+        files = env("CLAUDE_SYNC_FILES").split(",").map(&:strip).reject(&:empty?)
+        return files unless files.empty?
+      end
+
+      file = env("CLAUDE_SYNC_FILE")
+      return [file] if present?(file)
+
+      DEFAULT_FILES
+    end
+
+    def present?(value)
+      !value.nil? && !value.empty?
+    end
+
+    def extract_drive_document_id(value)
+      value.to_s.split("/").last
     end
   end
 end

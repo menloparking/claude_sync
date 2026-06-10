@@ -8,8 +8,11 @@ class GistClientTest < Minitest::Test
 
   GIST_RESPONSE = {
     "files" => {
-      "claude.md" => {
+      "CLAUDE.md" => {
         "content" => "# Instructions\nDo things."
+      },
+      "AGENTS.md" => {
+        "content" => "# Agents\nDo agent things."
       }
     }
   }.to_json
@@ -32,8 +35,22 @@ class GistClientTest < Minitest::Test
 
     result = @client.fetch
     assert_equal :ok, result[:status]
-    assert_equal "# Instructions\nDo things.", result[:content]
+    assert_equal "# Instructions\nDo things.", result[:contents]["CLAUDE.md"]
+    assert_equal "# Agents\nDo agent things.", result[:contents]["AGENTS.md"]
     assert_equal '"etag123"', result[:etag]
+  end
+
+  def test_fetch_falls_back_to_first_file_when_names_do_not_match
+    stub_request(:get, API_URL)
+      .to_return(
+        status: 200,
+        body: {"files" => {"notes.md" => {"content" => "# Notes"}}}.to_json,
+        headers: {"ETag" => '"etag123"'}
+      )
+
+    result = @client.fetch
+    assert_equal :ok, result[:status]
+    assert_equal "# Notes", result[:contents]["notes.md"]
   end
 
   def test_fetch_returns_not_modified_on_304

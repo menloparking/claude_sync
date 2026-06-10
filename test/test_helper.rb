@@ -13,9 +13,15 @@ module ClaudeSyncTestSetup
     ClaudeSync.reset_configuration!
     %w[
       CLAUDE_SYNC_GIST_URL
+      CLAUDE_SYNC_AGENTS_DRIVE_DOCUMENT_ID
+      CLAUDE_SYNC_DRIVE_DOCUMENT_ID
+      CLAUDE_SYNC_DRIVE_DOCUMENT_IDS
+      CLAUDE_SYNC_DRIVE_TOKEN
       CLAUDE_SYNC_FILE
+      CLAUDE_SYNC_FILES
       CLAUDE_SYNC_INTERVAL
       CLAUDE_SYNC_QUIET
+      DRIVE_MENLOPARKING_TOKEN
       GITHUB_TOKEN
     ].each { |key| ENV.delete(key) }
   end

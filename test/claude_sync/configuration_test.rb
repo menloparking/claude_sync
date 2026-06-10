@@ -29,6 +29,13 @@ class ConfigurationTest < Minitest::Test
     refute config.configured?
   end
 
+  def test_configured_returns_true_when_drive_document_set
+    ENV["CLAUDE_SYNC_DRIVE_DOCUMENT_ID"] = "drive-doc"
+    config = ClaudeSync::Configuration.new
+    assert config.configured?
+    assert config.drive_configured?
+  end
+
   def test_configured_returns_true_when_gist_url_set
     ENV["CLAUDE_SYNC_GIST_URL"] =
       "https://gist.github.com/user/abc123"
@@ -103,10 +110,41 @@ class ConfigurationTest < Minitest::Test
     assert_equal "CLAUDE.md", config.file
   end
 
+  def test_files_default_to_claude_and_agents
+    config = ClaudeSync::Configuration.new
+    assert_equal %w[CLAUDE.md AGENTS.md], config.files
+  end
+
   def test_file_uses_env_var
     ENV["CLAUDE_SYNC_FILE"] = "AGENTS.md"
     config = ClaudeSync::Configuration.new
     assert_equal "AGENTS.md", config.file
+    assert_equal ["AGENTS.md"], config.files
+  end
+
+  def test_files_uses_env_var
+    ENV["CLAUDE_SYNC_FILES"] = "CLAUDE.md, AGENTS.md, NOTES.md"
+    config = ClaudeSync::Configuration.new
+    assert_equal %w[CLAUDE.md AGENTS.md NOTES.md], config.files
+  end
+
+  def test_parses_drive_document_ids
+    ENV["CLAUDE_SYNC_DRIVE_DOCUMENT_IDS"] = "CLAUDE.md:claude-doc,AGENTS.md:agents-doc"
+    config = ClaudeSync::Configuration.new
+    assert_equal "claude-doc", config.drive_documents["CLAUDE.md"]
+    assert_equal "agents-doc", config.drive_documents["AGENTS.md"]
+  end
+
+  def test_parses_named_agents_drive_document_id
+    ENV["CLAUDE_SYNC_AGENTS_DRIVE_DOCUMENT_ID"] = "agents-doc"
+    config = ClaudeSync::Configuration.new
+    assert_equal "agents-doc", config.drive_documents["AGENTS.md"]
+  end
+
+  def test_parses_drive_document_url
+    ENV["CLAUDE_SYNC_DRIVE_DOCUMENT_ID"] = "https://drive.menloparking.com/documents/abc123"
+    config = ClaudeSync::Configuration.new
+    assert_equal "abc123", config.drive_documents["CLAUDE.md"]
   end
 
   def test_gist_id_returns_nil_when_url_not_set
